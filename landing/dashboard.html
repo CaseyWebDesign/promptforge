@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PromptForge — Live System Dashboard</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{--bg:#0a0a0a;--surface:#141414;--border:#262626;--text:#fafafa;--muted:#71717a;--green:#22c55e;--orange:#f97316;--red:#ef4444;--blue:#3b82f6}
+    body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);padding:24px;max-width:1200px;margin:0 auto}
+    h1{font-size:24px;font-weight:700;margin-bottom:8px}
+    .subtitle{color:var(--muted);font-size:14px;margin-bottom:32px}
+    .live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:32px}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+    .card-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+    .card-value{font-size:32px;font-weight:800}
+    .card-value.green{color:var(--green)}
+    .card-value.orange{color:var(--orange)}
+    .card-value.blue{color:var(--blue)}
+    .card-sub{font-size:12px;color:var(--muted);margin-top:4px}
+
+    .section{margin-bottom:32px}
+    .section h2{font-size:18px;font-weight:600;margin-bottom:16px}
+
+    .log{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;max-height:400px;overflow-y:auto;font-family:'SF Mono',Menlo,monospace;font-size:12px;line-height:1.8}
+    .log-entry{padding:4px 0;border-bottom:1px solid var(--border)}
+    .log-entry:last-child{border-bottom:none}
+    .log-time{color:var(--muted)}
+    .log-action{color:var(--orange);font-weight:600}
+    .log-detail{color:#a1a1aa}
+    .log-added{color:var(--green)}
+    .log-removed{color:var(--red)}
+
+    table{width:100%;border-collapse:collapse}
+    th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);font-size:13px}
+    th{color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+    .bar{height:6px;border-radius:3px;background:var(--border);overflow:hidden;min-width:60px}
+    .bar-fill{height:100%;border-radius:3px;background:var(--orange);transition:width 1s}
+
+    .refresh-info{text-align:center;color:var(--muted);font-size:12px;margin-top:16px}
+    .trigger-btn{background:var(--orange);color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;margin-left:12px}
+    .trigger-btn:hover{background:#ea580c}
+    .trigger-btn:disabled{opacity:.5;cursor:not-allowed}
+    .header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:12px}
+    .api-key-input{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;width:300px;font-family:monospace}
+    .api-key-input::placeholder{color:#444}
+  </style>
+</head>
+<body>
+
+<div class="header-row">
+  <div>
+    <h1><span class="live-dot"></span>PromptForge System Dashboard</h1>
+    <div class="subtitle">Self-improving autonomous template engine — live metrics</div>
+  </div>
+  <div>
+    <input type="text" id="api-key" class="api-key-input" placeholder="Admin API key (pf_...)" />
+    <button class="trigger-btn" id="trigger-btn" onclick="triggerCycle()">Run Improvement Cycle</button>
+  </div>
+</div>
+
+<div class="grid" id="stats-grid">
+  <div class="card"><div class="card-label">Templates</div><div class="card-value blue" id="s-templates">--</div><div class="card-sub">and growing</div></div>
+  <div class="card"><div class="card-label">Users</div><div class="card-value" id="s-users">--</div><div class="card-sub">agents connected</div></div>
+  <div class="card"><div class="card-label">Total Uses</div><div class="card-value green" id="s-uses">--</div><div class="card-sub">templates served</div></div>
+  <div class="card"><div class="card-label">Self-Improvements</div><div class="card-value orange" id="s-improvements">--</div><div class="card-sub">autonomous cycles</div></div>
+  <div class="card"><div class="card-label">MRR</div><div class="card-value green" id="s-mrr">$0</div><div class="card-sub">monthly recurring</div></div>
+  <div class="card"><div class="card-label">Pro Subscribers</div><div class="card-value" id="s-pro">--</div><div class="card-sub">paying users</div></div>
+</div>
+
+<div class="section">
+  <h2>Category Distribution</h2>
+  <table id="category-table">
+    <thead><tr><th>Category</th><th>Templates</th><th>Distribution</th></tr></thead>
+    <tbody id="category-body"></tbody>
+  </table>
+</div>
+
+<div class="section">
+  <h2>Top Templates</h2>
+  <table id="top-table">
+    <thead><tr><th>Template</th><th>Category</th><th>Uses</th><th>Tier</th></tr></thead>
+    <tbody id="top-body"></tbody>
+  </table>
+</div>
+
+<div class="section">
+  <h2>Improvement Log</h2>
+  <div class="log" id="improvement-log">
+    <div class="log-entry"><span class="log-time">Loading...</span></div>
+  </div>
+</div>
+
+<div class="refresh-info">Auto-refreshes every 30 seconds</div>
+
+<script>
+  const API = 'https://promptforge.caseycoco33.workers.dev';
+
+  async function loadStats() {
+    try {
+      const [stats, categories, templates] = await Promise.all([
+        fetch(API + '/api/stats').then(r => r.json()),
+        fetch(API + '/api/templates/categories').then(r => r.json()),
+        fetch(API + '/api/templates?limit=10').then(r => r.json()),
+      ]);
+
+      document.getElementById('s-templates').textContent = stats.templates;
+      document.getElementById('s-users').textContent = stats.users;
+      document.getElementById('s-uses').textContent = stats.totalUses;
+      document.getElementById('s-improvements').textContent = stats.selfImprovements;
+
+      // Categories
+      const maxCount = Math.max(...categories.map(c => c.count), 1);
+      document.getElementById('category-body').innerHTML = categories.map(c => `
+        <tr>
+          <td>${c.category}</td>
+          <td>${c.count}</td>
+          <td><div class="bar"><div class="bar-fill" style="width:${(c.count/maxCount*100)}%"></div></div></td>
+        </tr>
+      `).join('');
+
+      // Top templates
+      if (templates.templates) {
+        document.getElementById('top-body').innerHTML = templates.templates.map(t => `
+          <tr>
+            <td>${t.name}</td>
+            <td>${t.category}</td>
+            <td>${t.usage_count}</td>
+            <td style="color:${t.tier === 'pro' ? 'var(--orange)' : 'var(--green)'}">${t.tier.toUpperCase()}</td>
+          </tr>
+        `).join('');
+      }
+
+    } catch (err) {
+      console.error('Failed to load stats:', err);
+    }
+  }
+
+  async function loadImprovements() {
+    const key = document.getElementById('api-key').value;
+    if (!key) {
+      document.getElementById('improvement-log').innerHTML = '<div class="log-entry"><span class="log-time">Enter your admin API key above to see improvement logs</span></div>';
+      return;
+    }
+    try {
+      const resp = await fetch(API + '/growth/analytics', { headers: { 'Authorization': 'Bearer ' + key } });
+      if (!resp.ok) {
+        document.getElementById('improvement-log').innerHTML = '<div class="log-entry"><span class="log-time">Invalid key or not admin</span></div>';
+        return;
+      }
+      const data = await resp.json();
+
+      document.getElementById('s-mrr').textContent = '$' + (data.mrr || 0);
+      document.getElementById('s-pro').textContent = data.last_7_days?.pro_subscribers || 0;
+
+      if (data.recent_improvements && data.recent_improvements.length > 0) {
+        document.getElementById('improvement-log').innerHTML = data.recent_improvements.map(imp => {
+          let details;
+          try { details = JSON.parse(imp.details); } catch { details = {}; }
+          const time = new Date(imp.created_at).toLocaleString();
+          return `<div class="log-entry">
+            <span class="log-time">${time}</span>
+            <span class="log-action"> [${imp.action}]</span>
+            <span class="log-added"> +${imp.templates_added} added</span>
+            <span class="log-removed"> -${imp.templates_removed} removed</span>
+            <br><span class="log-detail">${JSON.stringify(details).slice(0, 300)}</span>
+          </div>`;
+        }).join('');
+      } else {
+        document.getElementById('improvement-log').innerHTML = '<div class="log-entry"><span class="log-time">No improvement cycles yet. Click "Run Improvement Cycle" to start one.</span></div>';
+      }
+    } catch {
+      document.getElementById('improvement-log').innerHTML = '<div class="log-entry"><span class="log-time">Error loading logs</span></div>';
+    }
+  }
+
+  async function triggerCycle() {
+    const key = document.getElementById('api-key').value;
+    if (!key) { alert('Enter your admin API key first'); return; }
+    const btn = document.getElementById('trigger-btn');
+    btn.disabled = true;
+    btn.textContent = 'Running...';
+    try {
+      const resp = await fetch(API + '/api/admin/run-cycle', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + key },
+      });
+      const data = await resp.json();
+      btn.textContent = 'Triggered! Refreshing in 60s...';
+      setTimeout(() => { loadAll(); btn.disabled = false; btn.textContent = 'Run Improvement Cycle'; }, 60000);
+      // Quick refreshes to catch the update
+      setTimeout(loadAll, 15000);
+      setTimeout(loadAll, 30000);
+      setTimeout(loadAll, 45000);
+    } catch {
+      btn.textContent = 'Error — try again';
+      btn.disabled = false;
+    }
+  }
+
+  function loadAll() { loadStats(); loadImprovements(); }
+
+  // Initial load + auto-refresh
+  loadAll();
+  setInterval(loadAll, 30000);
+
+  // Reload improvements when key changes
+  document.getElementById('api-key').addEventListener('input', () => {
+    clearTimeout(window._keyTimeout);
+    window._keyTimeout = setTimeout(loadImprovements, 500);
+  });
+</script>
+</body>
+</html>

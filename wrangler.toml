@@ -1,0 +1,21 @@
+name = "promptforge"
+main = "src/index.ts"
+compatibility_date = "2025-03-20"
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "promptforge-db"
+database_id = "068bba2a-a5b2-4a7a-936c-7ed2f575f877"
+
+[vars]
+STRIPE_PRICE_ID = "price_1TG5QsPIpnIPTPMzIGgHZL3y"
+SITE_URL = "https://promptforge-bs3.pages.dev"
+
+# Autonomous cron schedule:
+# - Full self-improvement cycle: daily at 3am UTC
+# - Lightweight optimization check: every 6 hours
+[triggers]
+crons = ["0 3 * * *", "0 */6 * * *"]
