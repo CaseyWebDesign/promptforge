@@ -9,7 +9,7 @@ metadata:
         - curl
     primaryEnv: PROMPTFORGE_API_KEY
     emoji: "🔥"
-    homepage: https://promptforge.pages.dev
+    homepage: https://github.com/CaseyWebDesign/promptforge
     tags:
       - sales
       - marketing
